@@ -56,8 +56,20 @@
                   (if (satisfies-constraints val) (inc idx))))
         (reduce +)))
 
+(defn solve-part2
+  [input]
+  ( ->> input
+        (str/split-lines)
+        (map str/trim)
+        (mapv get-game-map)
+        (map (fn [game]
+               (apply * (vals game))))
+        (reduce +)))
+
 (comment
   (solve-part1 sample-input)
   (solve-part1 (slurp (io/resource "inputDay2.txt"))) ; 54697
+  (solve-part2 sample-input)
+  (solve-part2 (slurp (io/resource "inputDay2.txt")))  ; 62241
 
   )
