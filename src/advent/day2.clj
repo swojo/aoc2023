@@ -13,48 +13,56 @@
 
 (defn parse-color-draw
   [[_ count color]]
-  {color (read-string count)})
+  [(keyword color) (parse-long count)])
 
-(defn get-all-draws
+(defn get-game-map
   [line]
   (->> line
        (re-seq #"(\d+)\s(\w+)")
-       (map parse-color-draw)))
+       (map parse-color-draw)
+       (group-by first)
+       (reduce-kv
+         (fn [m k vs]
+           (assoc m k (map second vs))) 
+         {})
+       (reduce-kv
+         (fn [m k vs]
+           (assoc m k (apply max vs))) 
+         {})))
 
-(defn get-max-per-color
-  [draw-maps-coll color]
-  (let [draw-values (remove nil? (map #(get % color) draw-maps-coll))]
-    (if (empty? draw-values)
-      0
-      (apply max (remove nil? (map #(get % color) draw-maps-coll))))))
-
-(def colors '("blue" "red" "green"))
-(def constraints 
-  {"red" 12 
-   "green" 13
-   "blue" 14})
-
-(defn get-game-map 
+#_(defn get-game-map2
   [line]
-  (let [draws (get-all-draws line)]
-    (apply merge (map (fn [color]
-         (hash-map color (get-max-per-color draws color)))
-         colors))))
+  (->> line
+       (re-seq #"(\d+)\s(\w+)")
+       (map parse-color-draw)
+       (group-by first)
+       (map (fn [[k vs]]
+              [k (map second vs)]))
+       (map (fn [[k v]]
+              [k (apply max v)]))
+       (into {})
+       ))
+
+(def constraints 
+  {:red 12 
+   :green 13
+   :blue 14})
 
 (defn satisfies-constraints
   [game-map]
-  (apply = true  (map #(<= (get game-map %) (get constraints %)) colors))
-  )
+  (apply = true  (map #(<= (get game-map %) (get constraints %)) 
+                      (keys constraints))))
 
 (defn solve-part1
   [input]
   ( ->> input
         (str/split-lines)
         (map str/trim)
-        (mapv get-game-map)
+        (map get-game-map)
         (keep-indexed (fn [idx val] 
-                  (if (satisfies-constraints val) (inc idx))))
-        (reduce +)))
+                  (when (satisfies-constraints val) (inc idx))))
+        (reduce +)
+        ))
 
 (defn solve-part2
   [input]
@@ -68,8 +76,7 @@
 
 (comment
   (solve-part1 sample-input)
-  (solve-part1 (slurp (io/resource "inputDay2.txt"))) ; 54697
+  (solve-part1 (slurp (io/resource "inputDay2.txt"))) ; 2207
   (solve-part2 sample-input)
   (solve-part2 (slurp (io/resource "inputDay2.txt")))  ; 62241
-
   )
